@@ -6,7 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <fcntl.h>
-#include <time.h> // Library for date and time functions
+#include <time.h> 
 
 // Function to convert number string to integer
 int string_to_int(char *str) {
