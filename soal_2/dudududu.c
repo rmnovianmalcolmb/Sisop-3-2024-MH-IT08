@@ -6,7 +6,7 @@
 #include <string.h>
 #include <math.h>
 #include <fcntl.h>
-#include <time.h> 
+#include <time.h> // Library for date and time functions
 
 // Function to convert number string to integer
 int string_to_int(char *str) {
@@ -85,11 +85,7 @@ int main(int argc, char *argv[]) {
             result = num1 + num2;
         } else if (strcmp(argv[1], "-kurang") == 0) {
             result = num1 - num2;
-        } else { // "-bagi"
-            if (num2 == 0) {
-                printf("ERROR: Division by zero\n");
-                return 1;
-            }
+        } else { 
             result = num1 / num2;
         }
 
@@ -100,7 +96,15 @@ int main(int argc, char *argv[]) {
 
         char result_str[100];
         read(fd2[0], result_str, sizeof(result_str));
-        printf("%s\n", result_str);
+        if (strcmp(argv[1], "-kali") == 0) {
+            printf("hasil perkalian %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else if (strcmp(argv[1], "-tambah") == 0) {
+           printf("hasil penjumlahan %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else if (strcmp(argv[1], "-kurang") == 0) {
+           printf("hasil pengurangan %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else { 
+           printf("hasil pembagian %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        }
         close(fd2[0]);
 
         // Writing to history.log
