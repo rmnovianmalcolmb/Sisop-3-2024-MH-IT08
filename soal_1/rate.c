@@ -79,14 +79,14 @@ int main() {
     printf("Type: Trash Can\n");
     printf("Filename: belobog_trashcan.csv\n");
     printf("------------------------------\n");
-    printf("Best Place: %s\n", trashcan_best_place);
-    printf("Max Rating: %.1f\n\n", max_trashcan_rating);
+    printf("Name: %s\n", trashcan_best_place);
+    printf("Rating: %.1f\n\n", max_trashcan_rating);
 
     printf("Type: Parking Lot\n");
     printf("Filename: osaka_parkinglot.csv\n");
     printf("------------------------------\n");
-    printf("Best Place: %s\n", parkinglot_best_place);
-    printf("Max Rating: %.1f\n", max_parkinglot_rating);
+    printf("Name: %s\n", parkinglot_best_place);
+    printf("Rating: %.1f\n", max_parkinglot_rating);
 
     // Memutuskan shared memory
     if (shmdt(shm_data) == -1) {
