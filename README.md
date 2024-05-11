@@ -845,16 +845,6 @@ int main() {
 }
 ```
 
-## How to Use
-
-1. Compile
-   ```bash
-   gcc paddock.c -o paddock
-   ```
-2.  Run 
-   ```bash
-./paddock
-```
 ## Penjelasan
 - logMessage(char* source, char* command, char* additionalInfo): Function untuk membuat log file.
 - signalHandler(int signal): Signal handler function untuk menghandle SIGINT and SIGTERM signals ketika terjadi signal shutdown
@@ -863,4 +853,301 @@ int main() {
 ## Problem
 ketika program dijalankan race.log atau logfile masih belum bisa dibuat dan response dari paddock.c ini terkadang jadi terkadang tidak sehingga agak membingungkan
 
+## SOAL NOMOR 4
 
+### client.c
+
+```c
+#define PORT 8080
+#define BUFFER_SIZE 1024
+```
+Ini adalah bagian define yang menentukan konstanta PORT dan BUFFER_SIZE yang akan digunakan dalam program.
+
+```c
+int main() {
+    int sock = 0, valread;
+    struct sockaddr_in serv_addr;
+    char buffer[BUFFER_SIZE] = {0};
+```
+Ini adalah awal dari fungsi main(). Variabel sock akan menyimpan deskriptor socket, valread akan menyimpan jumlah byte yang dibaca dari socket, serv_addr adalah struktur yang menyimpan informasi alamat server, dan buffer adalah array untuk menyimpan data yang dikirim dan diterima melalui socket.
+
+```c
+    sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        perror("Socket creation error");
+        return -1;
+    }
+```
+Bagian ini membuat socket baru menggunakan fungsi socket(). Jika terjadi kesalahan dalam pembuatan socket, pesan error akan dicetak dan program akan keluar.
+
+```c
+    serv_addr.sin_family = AF_INET;
+    serv_addr.sin_port = htons(PORT);
+```
+Bagian ini mengisi struktur serv_addr dengan informasi alamat server. sin_family diatur ke AF_INET untuk menunjukkan bahwa ini adalah alamat IPv4, dan sin_port diatur ke htons(PORT) yang mengubah nilai PORT ke format jaringan.
+
+```c
+    if(inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr) <= 0) {
+        printf("\nInvalid address/ Address not supported \n");
+        return -1;
+    }
+```
+Bagian ini mengonversi alamat IP "127.0.0.1" (localhost) dari bentuk teks ke bentuk biner menggunakan fungsi inet_pton() dan menyimpannya dalam serv_addr.sin_addr. Jika terjadi kesalahan dalam konversi, pesan error akan dicetak dan program akan keluar.
+
+```c
+    if (connect(sock, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+        perror("Connection Failed");
+        return -1;
+    }
+```
+Bagian ini mencoba menghubungkan socket ke alamat server menggunakan fungsi connect(). Jika terjadi kesalahan dalam koneksi, pesan error akan dicetak dan program akan keluar.
+
+```c
+    while (1) {
+        printf("Enter command (or 'exit' to quit): ");
+        fgets(buffer, BUFFER_SIZE, stdin);
+        buffer[strcspn(buffer, "\n")] = '\0'; // Menghapus newline dari input
+        
+        if (strcmp(buffer, "exit") == 0) {
+            break; // Keluar jika pengguna mengetik 'exit'
+        }
+
+        send(sock, buffer, strlen(buffer), 0);
+        printf("Command sent: %s\n", buffer);
+
+        if ((valread = read(sock, buffer, BUFFER_SIZE - 1)) > 0) {
+            buffer[valread] = '\0'; // Null-terminate the buffer
+            printf("Server response: %s\n", buffer);
+        }
+    }
+```
+Bagian ini adalah loop utama program. Dalam loop ini, program akan meminta pengguna untuk memasukkan perintah. Jika pengguna memasukkan "exit", loop akan diakhiri. Jika bukan, perintah akan dikirim ke server menggunakan fungsi send(). Kemudian, program akan menunggu respons dari server menggunakan fungsi read() dan mencetak respons tersebut.
+
+```c
+    close(sock);
+    return 0;
+}
+```
+Setelah keluar dari loop, socket akan ditutup menggunakan fungsi close(), dan program akan keluar dengan mengembalikan nilai 0.
+
+### server.c
+
+```c
+#define PORT 8080
+#define MAX_CLIENTS 10
+#define BUFFER_SIZE 1024
+#define FILE_PATH "../myanimelist.csv"
+```
+Ini adalah bagian define yang menentukan konstanta PORT (port server), MAX_CLIENTS (jumlah maksimum client yang dapat terhubung), BUFFER_SIZE (ukuran buffer untuk menerima dan mengirim data), dan FILE_PATH (lokasi file yang menyimpan data anime).
+
+```c
+void logChange(const char *type, const char *message) {
+    FILE *file = fopen("../change.log", "a");
+    if (!file) {
+        perror("Failed to open log file");
+        return;
+    }
+    time_t now = time(NULL);
+    char *timestamp = ctime(&now);
+    timestamp[strlen(timestamp) - 1] = '\0';  // Remove newline character
+    fprintf(file, "[%s] [%s] %s\n", timestamp, type, message);
+    fclose(file);
+}
+```
+Fungsi logChange digunakan untuk mencatat perubahan (penambahan atau penghapusan data) ke dalam file log change.log. Fungsi ini membuka file log dalam mode "a" (append), mendapatkan waktu saat ini menggunakan time() dan ctime(), lalu menulis log dengan format [timestamp] [type] message ke dalam file log.
+
+```c
+void addDataToFile(const char *data) {
+    FILE *file = fopen(FILE_PATH, "a");
+    if (!file) {
+        perror("Failed to open file for appending");
+        return;
+    }
+    fprintf(file, "%s\n", data);
+    fclose(file);
+}
+```
+Fungsi addDataToFile digunakan untuk menambahkan data baru ke file myanimelist.csv. Fungsi ini membuka file dalam mode "a" (append), menulis data baru ke dalam file menggunakan fprintf, lalu menutup file.
+
+```c
+void deleteDataFromFile(const char *title) {
+    FILE *file = fopen(FILE_PATH, "r");
+    if (!file) {
+        perror("Failed to open file for reading");
+        return;
+    }
+    FILE *temp = fopen("temp.csv", "w");
+    if (!temp) {
+        fclose(file);
+        perror("Failed to open temp file for writing");
+        return;
+    }
+
+    char line[BUFFER_SIZE];
+    int found = 0;
+    while (fgets(line, BUFFER_SIZE, file)) {
+        line[strcspn(line, "\n")] = '\0'; // Remove newline
+        if (strstr(line, title) == NULL) {
+            fprintf(temp, "%s\n", line);
+        } else {
+            found = 1;
+        }
+    }
+
+    fclose(file);
+    fclose(temp);
+
+    if (found) {
+        rename("temp.csv", FILE_PATH); // Replace old file with new temp file
+        logChange("DEL", title);
+    } else {
+        remove("temp.csv"); // Remove temp file if no data found
+    }
+}
+```
+Fungsi deleteDataFromFile digunakan untuk menghapus data dari file myanimelist.csv berdasarkan judul anime yang diberikan. Fungsi ini membuka file dalam mode "r" (read), membuat file sementara temp.csv dalam mode "w" (write), membaca setiap baris dari file dan menulis ke file sementara jika baris tersebut tidak mengandung judul anime yang ingin dihapus. Setelah semua baris diproses, file sementara menggantikan file asli jika data ditemukan dan dihapus, atau file sementara dihapus jika tidak ada data yang dihapus. Fungsi logChange dipanggil untuk mencatat penghapusan data ke dalam file log.
+
+```c
+void filterDataAndSend(int clientSocket, const char *filterCriteria, int columnIndex) {
+    FILE *file = fopen(FILE_PATH, "r");
+    if (!file) {
+        send(clientSocket, "Failed to open file.\n", 21, 0);
+        return;
+    }
+
+    char line[BUFFER_SIZE];
+    char *token;
+    char response[BUFFER_SIZE] = {0};
+    int found = 0;
+
+    while (fgets(line, sizeof(line), file) != NULL) {
+        char *tmp = strdup(line);
+        token = strtok(tmp, ",");
+        for (int i = 0; i < columnIndex; ++i) {
+            if (token != NULL) {
+                token = strtok(NULL, ",");
+            }
+        }
+
+        if (token && strstr(token, filterCriteria) != NULL) {
+            send(clientSocket, line, strlen(line), 0);
+            found = 1;
+        }
+        free(tmp);
+    }
+    fclose(file);
+
+    if (!found) {
+        strcpy(response, "No data found for the criteria.\n");
+        send(clientSocket, response, strlen(response), 0);
+    } else {
+        strcpy(response, "END_OF_DATA\n");
+        send(clientSocket, response, strlen(response), 0);
+    }
+}
+```
+Fungsi filterDataAndSend digunakan untuk mengirimkan data dari file myanimelist.csv ke client berdasarkan kriteria filter yang diberikan. Fungsi ini membuka file dalam mode "r" (read), lalu membaca setiap baris dari file. Untuk setiap baris, fungsi ini memisahkan baris menjadi token menggunakan strtok dengan pemisah ,. Kemudian, fungsi ini memeriksa token pada indeks kolom yang sesuai dengan columnIndex (0 untuk hari, 1 untuk genre, 3 untuk status) dan membandingkan dengan filterCriteria. Jika sesuai, baris tersebut dikirim ke client menggunakan send. Setelah semua baris diproses, jika tidak ada data yang ditemukan, pesan "No data found for the criteria" dikirim ke client. Jika ada data yang ditemukan, pesan "END_OF_DATA" dikirim ke client untuk menandakan akhir dari data.
+
+```c
+void handleCommand(int clientSocket, char *command) {
+    char response[1024] = {0};
+
+    if (strncmp(command, "ADD", 3) == 0) {
+        addDataToFile(command + 4);  // Command is expected like "ADD Day,Genre,Title,Status"
+        sprintf(response, "Data successfully added: %s", command + 4);
+        logChange("ADD", command + 4);
+    } else if (strncmp(command, "DEL", 3) == 0) {
+        deleteDataFromFile(command + 4);
+        sprintf(response, "Data successfully deleted if existing: %s", command + 4);
+    } else if (strncmp(command, "SHOW_ALL", 8) == 0) {
+        filterDataAndSend(clientSocket, "", 0);  // No filter, show all
+    } else if (strncmp(command, "SHOW_GENRES ", 12) == 0) {
+        filterDataAndSend(clientSocket, command + 12, 1);  // Filter by genre
+    } else if (strncmp(command, "SHOW_DAY ", 9) == 0) {
+        filterDataAndSend(clientSocket, command + 9, 0);  // Filter by day
+    } else if (strncmp(command, "SHOW_STATUS ", 12) == 0) {
+        filterDataAndSend(clientSocket, command + 12, 3);  // Filter by status
+    } else {
+        strcpy(response, "Invalid Command");
+        send(clientSocket, response, strlen(response), 0);
+    }
+}
+```
+Fungsi handleCommand digunakan untuk memproses perintah yang diterima dari client. Fungsi ini memeriksa perintah yang diterima dan melakukan tindakan yang sesuai berdasarkan perintah tersebut.
+Jika perintah dimulai dengan "ADD", fungsi addDataToFile dipanggil dengan data yang diberikan (diharapkan dalam format "ADD Day,Genre,Title,Status"). Kemudian, respons "Data successfully added" dikirim ke client, dan fungsi logChange dipanggil untuk mencatat penambahan data ke dalam file log.
+Jika perintah dimulai dengan "DEL", fungsi deleteDataFromFile dipanggil dengan judul anime yang ingin dihapus. Kemudian, respons "Data successfully deleted if existing" dikirim ke client.
+Jika perintah adalah "SHOW_ALL", fungsi filterDataAndSend dipanggil dengan kriteria filter kosong dan columnIndex 0 untuk menampilkan semua data.
+Jika perintah dimulai dengan "SHOW_GENRES ", fungsi filterDataAndSend dipanggil dengan kriteria filter yang diberikan setelah "SHOW_GENRES " dan columnIndex 1 untuk menampilkan data berdasarkan genre.
+Jika perintah dimulai dengan "SHOW_DAY ", fungsi filterDataAndSend dipanggil dengan kriteria filter yang diberikan setelah "SHOW_DAY " dan columnIndex 0 untuk menampilkan data berdasarkan hari.
+Jika perintah dimulai dengan "SHOW_STATUS ", fungsi filterDataAndSend dipanggil dengan kriteria filter yang diberikan setelah "SHOW_STATUS " dan columnIndex 3 untuk menampilkan data berdasarkan status.
+Jika perintah tidak valid, respons "Invalid Command" dikirim ke client.
+
+```c
+int main() {
+    int serverSocket, clientSocket;
+    struct sockaddr_in serverAddr, clientAddr;
+    socklen_t clientAddrLen;
+    char buffer[BUFFER_SIZE];
+
+    serverSocket = socket(AF_INET, SOCK_STREAM, 0);
+    if (serverSocket == -1) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr = INADDR_ANY;
+    serverAddr.sin_port = htons(PORT);
+
+    if (bind(serverSocket, (struct sockaddr *)&serverAddr, sizeof(serverAddr)) < 0) {
+        perror("Bind failed");
+        exit(EXIT_FAILURE);
+    }
+
+    if (listen(serverSocket, MAX_CLIENTS) < 0) {
+        perror("Listen failed");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Server is listening on port %d\n", PORT);
+```
+Ini adalah fungsi main yang merupakan titik masuk utama program. Pada bagian ini, program membuat socket server menggunakan socket(), mengikatnya ke alamat dan port tertentu menggunakan bind(), dan mendengarkan koneksi masuk menggunakan listen(). Jika terjadi kesalahan pada setiap langkah, program akan keluar dengan kode error.
+
+```c
+ while (1) {
+        clientAddrLen = sizeof(clientAddr);
+        clientSocket = accept(serverSocket, (struct sockaddr *)&clientAddr, &clientAddrLen);
+        if (clientSocket < 0) {
+            perror("Accept failed");
+            continue;
+        }
+
+        printf("New client connected\n");
+
+        while (1) {
+            memset(buffer, 0, BUFFER_SIZE);
+            int bytesRead = recv(clientSocket, buffer, BUFFER_SIZE - 1, 0);
+            if (bytesRead <= 0) {
+                break;
+            }
+
+            buffer[bytesRead] = '\0';
+            printf("Received command: %s\n", buffer);
+
+            handleCommand(clientSocket, buffer);
+
+            if (strcmp(buffer, "exit") == 0) {
+                break;
+            }
+        }
+
+        close(clientSocket);
+        printf("Client disconnected\n");
+    }
+
+    close(serverSocket);
+    return 0;
+}
+```
+Pada loop utama, program menerima koneksi dari client menggunakan accept(). Setelah terhubung dengan client, program memasuki loop internal untuk membaca perintah dari client menggunakan recv(). Setiap perintah yang diterima diproses oleh fungsi handleCommand(). Jika perintah exit diterima, loop internal keluar dan koneksi dengan client ditutup menggunakan close(). Setelah semua client terputus, socket server ditutup dan program keluar.
+Secara keseluruhan, program ini menyediakan server yang dapat menerima koneksi dari beberapa client sekaligus dan memungkinkan client untuk mengelola daftar anime dengan menambahkan, menghapus, dan menampilkan data yang disimpan dalam file myanimelist.csv.
