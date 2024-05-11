@@ -189,7 +189,7 @@ main(): Entry point of the program. Creates a socket, connects to the server, an
 ## Configuration
 - Server IP: 127.0.0.1
 - Server Port: 8080
-Maximum Command Length: 256
+- Maximum Command Length: 256
 ## Notes
 - This client program assumes a server is running locally on IP address 127.0.0.1 and port 8080. Modify the SERVER_IP and PORT constants in the code to match your server configuration.
 - Ensure the server is running and ready to accept connections before running the client.
@@ -219,7 +219,7 @@ This C program implements a server using sockets to communicate with clients. It
 Configuration
 - Server Port: 8080
 - Log File: race.log
-Notes
+## Notes
 This server program runs as a daemon process, handling client connections and logging actions to the specified log file.
 Customize the actions for specific commands in the actions.c file according to your application logic.
 Ensure proper permissions for the log file (race.log) to allow writing by the daemon process.
