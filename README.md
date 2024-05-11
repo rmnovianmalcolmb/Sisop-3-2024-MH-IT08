@@ -79,7 +79,7 @@ char* handleTireChange(char* tireType) {
 
 ## How to Use
 
-1. Include the header file `#include "racing_strategy.h"` in your C program.
+1. Include the header file `#include "actions.h"` in your C program.
 2. Call the appropriate function with the relevant parameters to get the racing strategy advice.
 
 ## driver.c
@@ -177,20 +177,51 @@ int main() {
 
 Compile the program using a C compiler (e.g., gcc) dan run it.
    ```bash
-   gcc client.c -o client
-   ./client
+   gcc driver.c -o driver
+   ./driver
    ```
 ## Code Overview
 sendCommand(int clientSocket): Function to send commands and additional information to the server and receive responses.
 main(): Entry point of the program. Creates a socket, connects to the server, and calls sendCommand().
 ## Requirements
-C compiler (e.g., gcc)
-Standard C libraries (stdio.h, stdlib.h, string.h, unistd.h, arpa/inet.h, sys/socket.h, errno.h)
+- C compiler (e.g., gcc)
+- Standard C libraries (stdio.h, stdlib.h, string.h, unistd.h, arpa/inet.h, sys/socket.h, errno.h)
 ## Configuration
-Server IP: 127.0.0.1
-Server Port: 8080
+- Server IP: 127.0.0.1
+- Server Port: 8080
 Maximum Command Length: 256
 ## Notes
-This client program assumes a server is running locally on IP address 127.0.0.1 and port 8080. Modify the SERVER_IP and PORT constants in the code to match your server configuration.
-Ensure the server is running and ready to accept connections before running the client.
+- This client program assumes a server is running locally on IP address 127.0.0.1 and port 8080. Modify the SERVER_IP and PORT constants in the code to match your server configuration.
+- Ensure the server is running and ready to accept connections before running the client.
+
+## paddock.c
+
+This C program implements a server using sockets to communicate with clients. It runs as a daemon process, handling client requests and logging actions.
+
+## How to Use
+
+1. Compile the program using a C compiler (e.g., gcc).
+   ```bash
+   gcc paddock.c -o paddock
+   ```
+2.  Run the program
+   ```bash
+./paddock
+```
+## Code Overview
+- logMessage(char* source, char* command, char* additionalInfo): Function to log messages to a specified log file (race.log).
+- signalHandler(int signal): Signal handler function to handle SIGINT and SIGTERM signals for graceful shutdown.
+- handleClient(int clientSocket): Function to handle client connections, receive commands, process them, and send responses.
+### Requirements
+- C compiler (e.g., gcc)
+- Standard C libraries (stdio.h, stdlib.h, string.h, time.h, unistd.h, sys/socket.h, arpa/inet.h, sys/types.h, signal.h)
+- External actions file (actions.c) for handling specific commands and actions.
+Configuration
+- Server Port: 8080
+- Log File: race.log
+Notes
+This server program runs as a daemon process, handling client connections and logging actions to the specified log file.
+Customize the actions for specific commands in the actions.c file according to your application logic.
+Ensure proper permissions for the log file (race.log) to allow writing by the daemon process.
+
 
