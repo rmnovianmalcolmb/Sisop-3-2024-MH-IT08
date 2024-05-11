@@ -109,19 +109,17 @@ struct shared_data {
 };
 ```
 
-**2. Mengalokasikan shared memory yang sudah ada dengan menggunakan key. Kemudian, mengaitkan shared memory ke address proses**
+**2. Mengalokasikan shared memory yang sudah ada dengan menggunakan key. Kemudian, attach shared memory ke address proses**
 ```c
 int main() {
     int shmid;
     key_t key = 1234;
 
-    // Alokasi shared memory yang sudah ada
     if ((shmid = shmget(key, sizeof(struct shared_data), 0666)) < 0) {
         perror("shmget");
         exit(1);
     }
 
-    // Mengaitkan shared memory ke ruang alamat proses
     struct shared_data *shm_data;
     if ((shm_data = (struct shared_data *)shmat(shmid, NULL, 0)) == (struct shared_data *) -1) {
         perror("shmat");
@@ -129,12 +127,70 @@ int main() {
     }
 ```
 
-**1. Membuat deklarasi untuk ukuran shared memory, panjang maks nama file, dan struktur data yang akan disimpan di shared memory**
+**3. Deklarasi variabel dan menyalin data dari shared memory**
 ```c
-#define SHM_SIZE 4096
-struct shared_data {
-    char data[SHM_SIZE];
-};
+
+    float max_trashcan_rating = 0.0;
+    float max_parkinglot_rating = 0.0;
+    char trashcan_best_place[256] = "";
+    char parkinglot_best_place[256] = "";
+
+    char buffer[SHM_SIZE];
+    strcpy(buffer, shm_data->data);
+
+    char current_csv[256] = "";
+```
+
+**4. Membaca data dan menentukan nama mana yang memiliki rating tertinggi dalam setiap type file csv**
+```c
+    char *line = strtok(buffer, "\n");
+    while (line != NULL) {
+        if (strstr(line, ".csv")) {
+            strcpy(current_csv, line);
+        } else {
+            char name[256];
+            float rating;
+            if (sscanf(line, "%[^,], %f", name, &rating) == 2) {
+                if (strstr(current_csv, "trashcan")) {
+                    if (rating > max_trashcan_rating) {
+                        max_trashcan_rating = rating;
+                        strcpy(trashcan_best_place, name);
+                    }
+                } else if (strstr(current_csv, "parkinglot")) {
+                    if (rating > max_parkinglot_rating) {
+                        max_parkinglot_rating = rating;
+                        strcpy(parkinglot_best_place, name);
+                    }
+                }
+            }
+        }
+        line = strtok(NULL, "\n");
+    }
+```
+
+**5. Melakukan print nama dengan rating tertinggi dimulai dengan type Trash Can lalu dilanjutkan dengan type Parking Lot**
+```c
+    printf("Type: Trash Can\n");
+    printf("Filename: belobog_trashcan.csv\n");
+    printf("------------------------------\n");
+    printf("Name: %s\n", trashcan_best_place);
+    printf("Rating: %.1f\n\n", max_trashcan_rating);
+
+    printf("Type: Parking Lot\n");
+    printf("Filename: osaka_parkinglot.csv\n");
+    printf("------------------------------\n");
+    printf("Name: %s\n", parkinglot_best_place);
+    printf("Rating: %.1f\n", max_parkinglot_rating);
+```
+
+**6. Mendetach atau melepaskan shared memory**
+```c
+    if (shmdt(shm_data) == -1) {
+        perror("shmdt");
+        exit(1);
+    }
+    return EXIT_SUCCESS;
+}
 ```
 
 # Soal nomor 3
