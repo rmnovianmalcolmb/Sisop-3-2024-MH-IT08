@@ -1,4 +1,3 @@
-
 # LAPORAN RESMI SOAL SHIFT MODUL 1 SISTEM OPERASI 2024
 ## ANGGOTA KELOMPOK IT08
 
@@ -10,6 +9,133 @@
 
 ### auth.c
 
+**1. Membuat deklarasi untuk ukuran shared memory, panjang maks nama file, dan struktur data yang akan disimpan di shared memory**
+```c
+#define SHM_SIZE 4096
+#define FILENAME_MAX_LEN 256 
+struct shared_data {
+    char data[SHM_SIZE];
+};
+```
+
+**2. Mendeklarasikan variabel-variabel yang diperlukan seperti pointer ke direktori, entri direktori, id shared memory, dan key untuk shared memory**
+```c
+int main() {
+    DIR *dir;
+    struct dirent *ent;
+    int shmid;
+    key_t key = 1234;
+```
+
+
+**3. Membuat shared memory dengan menggunakan shmget(), dengan menggunakan kunci yang telah ditentukan sebelumnya. Kemudian, shared memory tersebut diattach ke address proses menggunakan shmat() lalu membersihkan shared memory**
+```c
+    if ((shmid = shmget(key, sizeof(struct shared_data), IPC_CREAT | 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+
+    struct shared_data *shm_data;
+    if ((shm_data = (struct shared_data *)shmat(shmid, NULL, 0)) == (struct shared_data *) -1) {
+        perror("shmat");
+        exit(1);
+    }
+    memset(shm_data->data, 0, SHM_SIZE);
+```
+
+**4. Membuka direktori `new-data` dan melakukan autentikasi ke file yang ada di direktori tersebut, file yang terautentikasi adalah file yang mengandung `_trashcan.csv` atau `_parkinglot.csv`, jika tidak terautentikasi maka akan dihapus**
+```c
+dir = opendir("new-data");
+    if (dir != NULL) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (ent->d_type == DT_REG) { 
+                char filepath[512];
+                char *dot = strrchr(ent->d_name, '.');
+                if (dot && !strcmp(dot, ".csv")) {  
+                    char *underscore = strchr(ent->d_name, '_');
+                    if (underscore) {
+                        if (!strcmp(underscore + 1, "trashcan.csv") || !strcmp(underscore + 1, "parkinglot.csv")) {
+                            sprintf(filepath, "new-data/%s", ent->d_name);
+                            FILE *csv_file = fopen(filepath, "r");
+                            if (csv_file == NULL) {
+                                perror("Error opening CSV file");
+                                exit(1);
+                            }
+                            strcat(shm_data->data, ent->d_name);
+                            strcat(shm_data->data, "\n"); 
+                            char line[256];
+                            while (fgets(line, sizeof(line), csv_file) != NULL) {
+                                strcat(shm_data->data, line);
+                            }
+                            fclose(csv_file);
+                        } else {
+                            sprintf(filepath, "new-data/%s", ent->d_name);
+                            remove(filepath);
+                        }
+                    } else {
+                        sprintf(filepath, "new-data/%s", ent->d_name);
+                        remove(filepath);
+                    }
+                } else {
+                    sprintf(filepath, "new-data/%s", ent->d_name);
+                    remove(filepath);
+                }
+            }
+        }
+        closedir(dir);
+    } else {
+        perror("new-data");
+        return EXIT_FAILURE;
+    }
+```
+
+**5. Mendetach atau melepaskan shared memory**
+```c
+    if (shmdt(shm_data) == -1) {
+        perror("shmdt");
+        exit(1);
+    }
+    return EXIT_SUCCESS;
+}
+```
+
+### rate.c
+
+**1. Membuat deklarasi untuk ukuran shared memory, panjang maks nama file, dan struktur data yang akan disimpan di shared memory**
+```c
+#define SHM_SIZE 4096
+struct shared_data {
+    char data[SHM_SIZE];
+};
+```
+
+**2. Mengalokasikan shared memory yang sudah ada dengan menggunakan key. Kemudian, mengaitkan shared memory ke address proses**
+```c
+int main() {
+    int shmid;
+    key_t key = 1234;
+
+    // Alokasi shared memory yang sudah ada
+    if ((shmid = shmget(key, sizeof(struct shared_data), 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+
+    // Mengaitkan shared memory ke ruang alamat proses
+    struct shared_data *shm_data;
+    if ((shm_data = (struct shared_data *)shmat(shmid, NULL, 0)) == (struct shared_data *) -1) {
+        perror("shmat");
+        exit(1);
+    }
+```
+
+**1. Membuat deklarasi untuk ukuran shared memory, panjang maks nama file, dan struktur data yang akan disimpan di shared memory**
+```c
+#define SHM_SIZE 4096
+struct shared_data {
+    char data[SHM_SIZE];
+};
+```
 
 # Soal nomor 3
 ## actions.c
