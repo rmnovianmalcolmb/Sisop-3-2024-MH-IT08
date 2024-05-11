@@ -271,6 +271,20 @@ int main() {
 }
 ```
 
+**Hasil akhir setelah menjalankan `./auth`**
+![Screenshot from 2024-05-11 21-45-58](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/f860aaaf-5e14-4a66-a515-970a79751400)
+
+**Hasil akhir setelah menjalankan `./rate`**
+![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/1e7fa717-a559-41a7-9297-7e67ca826694)
+
+**Hasil akhir setelah menjalankan `./db`**
+![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/25e39614-26b8-4607-b37b-0afe3e5d39a4)
+
+**Hasil `db.log`**
+
+![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/283d672b-a888-42ed-b9c6-b46470a815d2)
+
+
 # Soal nomor 3
 ## actions.c
 
