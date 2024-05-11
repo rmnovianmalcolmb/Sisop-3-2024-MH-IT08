@@ -284,6 +284,196 @@ int main() {
 
 ![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/283d672b-a888-42ed-b9c6-b46470a815d2)
 
+## SOAL NOMOR 2
+
+### dudududu.c
+
+**1. Fungsi untuk merubah kata menjadi angka**
+```c
+int string_to_int(char *str) {
+    if (strcmp(str, "nol") == 0) return 0;
+    else if (strcmp(str, "satu") == 0) return 1;
+    else if (strcmp(str, "dua") == 0) return 2;
+    else if (strcmp(str, "tiga") == 0) return 3;
+    else if (strcmp(str, "empat") == 0) return 4;
+    else if (strcmp(str, "lima") == 0) return 5;
+    else if (strcmp(str, "enam") == 0) return 6;
+    else if (strcmp(str, "tujuh") == 0) return 7;
+    else if (strcmp(str, "delapan") == 0) return 8;
+    else if (strcmp(str, "sembilan") == 0) return 9;
+    else return -1;
+}
+```
+
+**2. Fungsi untuk merubah angka menjadi kata**
+```c
+void int_to_words(int num, char *words) {
+    const char *ones[] = {"", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan"};
+    const char *tens[] = {"", "sepuluh", "dua puluh", "tiga puluh", "empat puluh", "lima puluh", "enam puluh", "tujuh puluh", "delapan puluh", "sembilan puluh"};
+    const char *teens[] = {"sepuluh", "sebelas", "dua belas", "tiga belas", "empat belas", "lima belas", "enam belas", "tujuh belas", "delapan belas", "sembilan belas"};
+
+    if (num < 10) {
+        strcpy(words, ones[num]);
+    } else if (num < 20) {
+        strcpy(words, teens[num - 10]);
+    } else {
+        int digit1 = num % 10;
+        int digit2 = num / 10;
+        if (digit1 == 0) {
+            strcpy(words, tens[digit2]);
+        } else {
+            sprintf(words, "%s %s", tens[digit2], ones[digit1]);
+        }
+    }
+}
+```
+
+**3. Fungsi agar ./kalkulator hanya bisa dijalankan dengan argumen -kali, -tambah, -kurang, dan -bagi**
+```c
+int main(int argc, char *argv[]) {
+    if (argc != 2 || (strcmp(argv[1], "-kali") != 0 && strcmp(argv[1], "-tambah") != 0 && strcmp(argv[1], "-kurang") != 0 && strcmp(argv[1], "-bagi") != 0)) {
+        return 1;
+    }
+```
+
+**4. Membuat parent dan child process**
+```c
+    int fd1[2], fd2[2];
+    if (pipe(fd1) == -1 || pipe(fd2) == -1) {
+        perror("Pipe failed");
+        return 1;
+    }
+
+    pid_t pid = fork();
+    if (pid == -1) {
+        perror("Fork failed");
+        return 1;
+    }
+```
+
+**5. Mengambil input dan melakukan penghitungan**
+```c
+    if (pid > 0) { 
+        close(fd1[0]); 
+        close(fd2[1]); 
+
+        char input_str1[20], input_str2[20];
+        fflush(stdout);
+        scanf("%s %s", input_str1, input_str2);
+
+        int num1 = string_to_int(input_str1);
+        int num2 = string_to_int(input_str2);
+
+        if (num1 == -1 || num2 == -1) {
+            printf("Invalid input\n");
+            return 1;
+        }
+
+        int result;
+        if (strcmp(argv[1], "-kali") == 0) {
+            result = num1 * num2;
+        } else if (strcmp(argv[1], "-tambah") == 0) {
+            result = num1 + num2;
+        } else if (strcmp(argv[1], "-kurang") == 0) {
+            result = num1 - num2;
+        } else { 
+            result = num1 / num2;
+        }
+```
+
+**6. Melakukan print output ke terminal**
+```c
+    write(fd1[1], &result, sizeof(result));
+        close(fd1[1]);
+
+        wait(NULL);
+
+        char result_str[100];
+        read(fd2[0], result_str, sizeof(result_str));
+        if (strcmp(argv[1], "-kali") == 0) {
+            printf("hasil perkalian %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else if (strcmp(argv[1], "-tambah") == 0) {
+           printf("hasil penjumlahan %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else if (strcmp(argv[1], "-kurang") == 0) {
+           printf("hasil pengurangan %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        } else { 
+           printf("hasil pembagian %s dan %s adalah %s\n", input_str1,input_str2,result_str);
+        }
+        close(fd2[0]);
+```
+
+**7. Menulis log di `histori.log`**
+```c
+    FILE *history = fopen("histori.log", "a");
+        if (history != NULL) {
+            
+            char log_message[256];
+            char operation_type[10];
+            
+            time_t current_time;
+            struct tm *local_time;
+            char time_str[20];
+
+            time(&current_time);
+            local_time = localtime(&current_time);
+            strftime(time_str, sizeof(time_str), "%d/%m/%y %H:%M:%S", local_time);
+            
+            if (strcmp(argv[1], "-kali") == 0) {
+                 sprintf(log_message, "[%s] [KALI] %s kali %s sama dengan %s\n", time_str, input_str1, input_str2, result_str);
+            } else if (strcmp(argv[1], "-tambah") == 0) {
+                sprintf(log_message, "[%s] [TAMBAH] %s tambah %s sama dengan %s\n", time_str, input_str1, input_str2, result_str);
+            } else if (strcmp(argv[1], "-kurang") == 0) {
+            	if(result < 0) {
+            	sprintf(log_message, "[%s] [KURANG] ERROR pada pengurangan\n", time_str);
+            	}
+            	else {
+                sprintf(log_message, "[%s] [KURANG] %s kurang %s sama dengan %s\n", time_str, input_str1, input_str2, result_str);
+                }
+            } else {  
+                sprintf(log_message, "[%s] [BAGI] %s bagi %s sama dengan %s\n", time_str, input_str1, input_str2, result_str);
+            }
+            fputs(log_message, history);
+            fclose(history);
+        } else {
+            printf("Error writing to history.log\n");
+        }
+```
+
+**8. Child process untuk merubah hasil angka menjadi kata**
+```c
+    } else { 
+        close(fd1[1]); 
+        close(fd2[0]); 
+
+        int result;
+        read(fd1[0], &result, sizeof(result));
+
+        char result_str[100];
+        if (result == 0) {
+            strcpy(result_str, "nol");
+        } else if (result < 0) {
+            strcpy(result_str, "ERROR");
+        } else {
+            int_to_words(result, result_str);
+        }
+
+        write(fd2[1], result_str, sizeof(result_str));
+        close(fd2[1]);
+
+        exit(0);
+    }
+
+    return 0;
+}
+```
+**Contoh penggunaan program**
+![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/311d81f6-0163-4632-91b6-cecf11b97e09)
+
+**Hasil histori.log**
+
+![image](https://github.com/rmnovianmalcolmb/Sisop-3-2024-MH-IT08/assets/122516105/2507c282-d4f8-4d4e-af5b-134f4bc2365d)
+
+
 
 # Soal nomor 3
 ## actions.c
