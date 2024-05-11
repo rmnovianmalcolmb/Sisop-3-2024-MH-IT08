@@ -14,7 +14,7 @@
 # Soal nomor 3
 ## actions.c
 
-This repository contains a set of functions to assist with racing strategy decisions based on various factors such as gap to leader, fuel level, tire wear, and tire type.
+actions.c berisi fungsi-fungsi yang dapat dipanggil oleh padock.c ketika dijalankan.
 
 ```bash
 #include <stdio.h>
@@ -63,7 +63,7 @@ char* handleTireChange(char* tireType) {
 }
 ```
 
-## Fungsi Functions
+## Penjelasan
 
 ### 1. `handleGap(float gap)`
 
@@ -92,11 +92,11 @@ char* handleTireChange(char* tireType) {
 
 ## How to Use
 
-1. Include the header file `#include "actions.h"` in your C program.
-2. Call the appropriate function with the relevant parameters to get the racing strategy advice.
+1. Include header file `#include "actions.h"` 
+2. Call salah satu function di dalamnya
 
 ## driver.c
-This C program demonstrates a simple client-server communication using sockets. The client sends commands to the server and receives responses.
+driver.c sebagai klien yang mengirimkan command kepada paddock dan menerima respon
 ```bash
 #include <stdio.h>
 #include <stdlib.h>
@@ -188,53 +188,36 @@ int main() {
 
 ## How to Use
 
-Compile the program using a C compiler (e.g., gcc) dan run it.
+Compile dan jalankan namun harus didahului program paddock
    ```bash
+    ./paddock
    gcc driver.c -o driver
    ./driver
    ```
-## Code Overview
-sendCommand(int clientSocket): Function to send commands and additional information to the server and receive responses.
-main(): Entry point of the program. Creates a socket, connects to the server, and calls sendCommand().
-## Requirements
-- C compiler (e.g., gcc)
-- Standard C libraries (stdio.h, stdlib.h, string.h, unistd.h, arpa/inet.h, sys/socket.h, errno.h)
-## Configuration
-- Server IP: 127.0.0.1
-- Server Port: 8080
-- Maximum Command Length: 256
-## Notes
-- This client program assumes a server is running locally on IP address 127.0.0.1 and port 8080. Modify the SERVER_IP and PORT constants in the code to match your server configuration.
-- Ensure the server is running and ready to accept connections before running the client.
+## Penjelasan
+sendCommand(int clientSocket): Function untuk mengirimkan pesan
+main(): membuat socket, connect ke server dan call sendCommand().
+
 
 ## paddock.c
-
-This C program implements a server using sockets to communicate with clients. It runs as a daemon process, handling client requests and logging actions.
+Implementasi sebagai server dalam hal ini mengirimkan response kepada klien.
 
 ## How to Use
 
-1. Compile the program using a C compiler (e.g., gcc).
+1. Compile
    ```bash
    gcc paddock.c -o paddock
    ```
-2.  Run the program
+2.  Run 
    ```bash
 ./paddock
 ```
-## Code Overview
-- logMessage(char* source, char* command, char* additionalInfo): Function to log messages to a specified log file (race.log).
-- signalHandler(int signal): Signal handler function to handle SIGINT and SIGTERM signals for graceful shutdown.
-- handleClient(int clientSocket): Function to handle client connections, receive commands, process them, and send responses.
-### Requirements
-- C compiler (e.g., gcc)
-- Standard C libraries (stdio.h, stdlib.h, string.h, time.h, unistd.h, sys/socket.h, arpa/inet.h, sys/types.h, signal.h)
-- External actions file (actions.c) for handling specific commands and actions.
-Configuration
-- Server Port: 8080
-- Log File: race.log
-## Notes
-This server program runs as a daemon process, handling client connections and logging actions to the specified log file.
-Customize the actions for specific commands in the actions.c file according to your application logic.
-Ensure proper permissions for the log file (race.log) to allow writing by the daemon process.
+## Penjelasan
+- logMessage(char* source, char* command, char* additionalInfo): Function untuk membuat log file.
+- signalHandler(int signal): Signal handler function untuk menghandle SIGINT and SIGTERM signals ketika terjadi signal shutdown
+- handleClient(int clientSocket): Function untuk menghandle client connections, menerima commands, memproses, and mengirim responses.
+
+## Problem
+ketika program dijalankan race.log atau logfile masih belum bisa dibuat dan response dari paddock.c ini terkadang jadi terkadang tidak sehingga agak membingungkan
 
 
