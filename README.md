@@ -193,6 +193,84 @@ int main() {
 }
 ```
 
+### db.c
+
+**1. Membuat deklarasi untuk ukuran shared memory, panjang maks nama file, dan struktur data yang akan disimpan di shared memory**
+```c
+#define SHM_SIZE 4096
+struct shared_data {
+    char data[SHM_SIZE];
+};
+```
+
+**2. Mengalokasikan shared memory yang sudah ada dengan menggunakan key. Kemudian, attach shared memory ke address proses**
+```c
+int main() {
+    int shmid;
+    key_t key = 1234;
+
+    if ((shmid = shmget(key, sizeof(struct shared_data), 0666)) < 0) {
+        perror("shmget");
+        exit(1);
+    }
+
+    struct shared_data *shm_data;
+    if ((shm_data = (struct shared_data *)shmat(shmid, NULL, 0)) == (struct shared_data *) -1) {
+        perror("shmat");
+        exit(1);
+    }
+```
+
+**3. Menyalin data dari shared memory lalu memindahkan file yang mengandung nama yang sesuai pada shared memory yaitu `_trashcan.csv` dan `_parkinglot.csv` dari direktori `new-data` ke direktori `microservices/database`, lalu menulis log pada `db.log`**
+```c
+    char buffer[SHM_SIZE];
+    strcpy(buffer, shm_data->data);
+    char *line = strtok(buffer, "\n");
+    while (line != NULL) {
+        char filename[256];
+        sscanf(line, "%s", filename);
+        char source_path[256] = "/home/ubuntu/sisop3soal1/new-data/";
+        strcat(source_path, filename);
+        char dest_path[256] = "/home/ubuntu/sisop3soal1/microservices/database/";
+        strcat(dest_path, filename);
+        if (rename(source_path, dest_path) == 0) {
+            time_t now = time(NULL);
+            struct tm *timeinfo = localtime(&now);
+            char timestamp[20];
+            strftime(timestamp, sizeof(timestamp), "%d/%m/%Y %H:%M:%S", timeinfo);
+            char file_type[20];
+            if (strstr(filename, "trashcan") != NULL) {
+                strcpy(file_type, "Trash Can");
+            } else if (strstr(filename, "parkinglot") != NULL) {
+                strcpy(file_type, "Parking Lot");
+            } else {
+                strcpy(file_type, "Unknown");
+            }
+            printf("[%s] [%s] %s\n", timestamp, file_type, filename);
+            FILE *log_file = fopen("/home/ubuntu/sisop3soal1/microservices/database/db.log", "a");
+            if (log_file != NULL) {
+                fprintf(log_file, "[%s] [%s] [%s]\n", timestamp, file_type, filename);
+                fclose(log_file);
+            } else {
+                perror("fopen");
+            }
+        } else {
+            perror("rename");
+        }
+        line = strtok(NULL, "\n");
+    }
+```
+
+**4. Mendetach atau melepaskan shared memory**
+```c
+    if (shmdt(shm_data) == -1) {
+        perror("shmdt");
+        exit(1);
+    }
+    return EXIT_SUCCESS;
+}
+```
+
 # Soal nomor 3
 ## actions.c
 
