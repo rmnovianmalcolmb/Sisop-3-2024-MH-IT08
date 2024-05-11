@@ -195,8 +195,8 @@ Compile dan jalankan namun harus didahului program paddock
    ./driver
    ```
 ## Penjelasan
-sendCommand(int clientSocket): Function untuk mengirimkan pesan
-main(): membuat socket, connect ke server dan call sendCommand().
+- sendCommand(int clientSocket): Function untuk mengirimkan pesan
+- main(): membuat socket, connect ke server dan call sendCommand().
 
 
 ## paddock.c
